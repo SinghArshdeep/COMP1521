@@ -32,7 +32,16 @@ main:
 	syscall			# scanf("%d", into $v0)
 
 	### TODO: your code for the body of main() goes here
+    add $t0, $v0, $0
+    li $t1, 0
+    li $t2, 1
 
+    forloop:
+    addi $t1, $t1, 1
+    mul $t2, $t2, $t1
+    bne $t1, $t0, forloop
+
+    move $s2, $t2
 	la	$a0, msg2
 	li	$v0, 4
 	syscall			# printf("n! = ")
