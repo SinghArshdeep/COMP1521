@@ -39,8 +39,10 @@ main:
     forloop:
     addi $t1, $t1, 1
     mul $t2, $t2, $t1
+    blt $t0, $0, end
     bne $t1, $t0, forloop
 
+    end:
     move $s2, $t2
 	la	$a0, msg2
 	li	$v0, 4
