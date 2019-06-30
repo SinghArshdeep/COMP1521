@@ -75,7 +75,7 @@ fac:
     add $t0, $a0, $0
     li $t1, 0
     li $t2, 1
-    blt $t0, $0, end
+    blt $t0, $t2, end
 
     forloop:
     addi $t1, $t1, 1
