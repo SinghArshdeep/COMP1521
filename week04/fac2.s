@@ -29,6 +29,10 @@ main:
 	syscall			# scanf("%d", into $v0)
 
 	### TODO: add your code here for  tmp = fac(n)
+    move $a0, $v0
+    jal fac
+    move $t0, $v0
+
 	### ....  place the parameter in $a0; get the result from $v0
 
 	la	$a0, msg2
@@ -68,6 +72,18 @@ fac:
 	# code for fac()
 
 	# TODO: place your code for the body of fac() here
+    add $t0, $a0, $0
+    li $t1, 0
+    li $t2, 1
+    blt $t0, $0, end
+
+    forloop:
+    addi $t1, $t1, 1
+    mul $t2, $t2, $t1
+    bne $t1, $t0, forloop
+
+    end:
+    move $v0, $t2
 	# .... use the value of n in $a0, place n! in $v0
 
 	# clean up stack frame

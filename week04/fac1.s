@@ -35,11 +35,11 @@ main:
     add $t0, $v0, $0
     li $t1, 0
     li $t2, 1
+    blt $t0, $0, end
 
     forloop:
     addi $t1, $t1, 1
     mul $t2, $t2, $t1
-    blt $t0, $0, end
     bne $t1, $t0, forloop
 
     end:
