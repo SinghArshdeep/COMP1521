@@ -61,9 +61,38 @@ main:
 	.globl	fac
 fac:
 	## TODO: set up stack frame
+    sw $fp, -4($sp)
+    la $fp, -4($sp)
+    sw $ra, -8($sp)
+    sw $s0, -12($sp)
+    sw $s1, -16($sp)
+    sw $s2, -20($sp)
+    addi $sp, $sp, -24
 
 	## TODO: code for recursive fac()
+    move $s1, $a0
 
+base_case:
+    li $t0, 1
+    bgt   $a0, $t0, rec_case    # Else go to recursive case
+    li    $v0, 1
+    j     return
+
+rec_case:
+    move $s1, $a0
+    addi  $a0, $a0, -1
+    jal   fac           # Recursive call
+    move  $t0, $v0      # Store result in $t0
+
+    mul $v0, $t0, $s1
+    j return 
 	## TODO: clean up stack frame
+return:
+    lw $s2, -16($fp)
+    lw $s1, -12($fp)
+    lw $s0, -8($fp)
+    lw $ra, -4($fp)
+    la $sp, 4($sp)
+    lw $fp, ($fp)
 
 	jr	$ra		# ... and return
