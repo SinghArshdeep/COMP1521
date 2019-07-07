@@ -225,7 +225,7 @@ isIdent:
     sw    $s4, ($sp)    # push $s4
 
 	## TODO: your code for the body of isIdent(m,N) goes here.
-    lw  $s0, $a1            # s1 = #rows and columns
+    move  $s0, $a1            # s1 = #rows and columns
     li  $s1, 0              # row = 0
     li  $s2, 0              # col = 0
     li $s3, 4               # size for int
