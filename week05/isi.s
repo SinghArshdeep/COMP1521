@@ -252,7 +252,7 @@ equal:
     bne $t1, $t2, interupt
 
 add_col:
-    addi $s4, $s4, 1       # col++
+    addi $s2, $s2, 1       # col++
     j    innerloop
 
 end2:
