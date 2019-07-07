@@ -221,17 +221,50 @@ isIdent:
 	sw	$s2, ($sp)	# push $s2
 	addi	$sp, $sp, -4
 	sw	$s3, ($sp)	# push $s3
-
-	# If you need to save more than four $s? registers,
-	# add extra code here to save them on the stack.
-
+    addi    $sp, $sp, -4
+    sw    $s4, ($sp)    # push $s4
 
 	## TODO: your code for the body of isIdent(m,N) goes here.
+    lw  $s0, $a1            # s1 = #rows and columns
+    li  $s1, 0              # row = 0
+    li  $s2, 0              # col = 0
+    li $s3, 4               # size for int
+    mul $s4, $s3, $s0       # row size
 
+outerloop:
+    bge  $s1, $s0, end      # if (row >= N) break
+    li   $s2, 0             # col = 0
 
+innerloop:
+    bge  $s2, $s0, end2    # if (col >= N) break
+    mul  $t0, $s1, $s4     # t0 = row*rowsize
+    mul  $t1, $s2, $s3     # t1 = col*intsize
+    add  $t0, $t0, $t1     # offset = t0+t1
+    add  $t0, $t0, $a0
+    lw   $t1, ($t0)  # t0 = *(matrix+offset)
+    li   $t2, 1
+    beq $s1, $s2, equal
+    li   $t2, 0
+    bne $t1, $t2, interupt
+    j add_col
+
+equal:
+    bne $t1, $t2, interupt
+
+add_col:
+    addi $s4, $s4, 1       # col++
+    j    innerloop
+
+end2:
+    addi $s1, $s1, 1       # row++
+    j outerloop
 	# tear down stack frame
 	# If you saved more than four $s? registers,
 	# add extra code here to restore them.
+end:
+    li $v0, 1
+    lw    $s4, ($sp)    # pop $s4
+    addi    $sp, $sp, 4
 	lw	$s3, ($sp)	# pop $s3
 	addi	$sp, $sp, 4
 	lw	$s2, ($sp)	# pop $s2
@@ -245,3 +278,22 @@ isIdent:
 	lw	$fp, ($sp)	# pop $fp
 	addi	$sp, $sp, 4
 	jr	$ra
+
+
+interupt:
+    li $v0, 0
+    lw    $s4, ($sp)    # pop $s4
+    addi    $sp, $sp, 4
+    lw    $s3, ($sp)    # pop $s3
+    addi    $sp, $sp, 4
+    lw    $s2, ($sp)    # pop $s2
+    addi    $sp, $sp, 4
+    lw    $s1, ($sp)    # pop $s1
+    addi    $sp, $sp, 4
+    lw    $s0, ($sp)    # pop $s0
+    addi    $sp, $sp, 4
+    lw    $ra, ($sp)    # pop $ra
+    addi    $sp, $sp, 4
+    lw    $fp, ($sp)    # pop $fp
+    addi    $sp, $sp, 4
+    jr    $ra
