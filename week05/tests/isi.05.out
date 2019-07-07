@@ -1,6 +1,10 @@
+spim: (parser) syntax error on line 228 of file exe.112824.s
+	  lw  $s0, $a1            # s1 = #rows and columns
+	           ^
+Instruction references undefined symbol at 0x00400044
+  [0x00400044]	0x3c010000  lui $1, 0 [m]                   ; 50: la	$a0, m		#            + from &m[0][0]
+The following symbols are undefined:
+N
+m
+
 The matrix
- 1 0 0 0
- 0 1 0 0
- 0 0 1 0
- 0 0 0 1
-is an identity matrix
