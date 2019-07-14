@@ -8,17 +8,22 @@
 # - newBoard (byte[][]): next board state
 
     .data
+msg5:   .asciiz " ===\n"
 msg1:   .asciiz "# Iterations: "
-msg2:   .asciiz "=== After iteration %d ==="
+msg2:   .asciiz "=== After iteration "
 eol:    .asciiz "\n"
-msg3:   .ascii "."
-msg4:   .ascii "#"
+msg3:   .asciiz "."
+msg4:   .asciiz "#"
+
+msg6:   .asciiz "it enters the loop\n"
+
 
 ## Provides:
 	.globl	main
 	.globl	decideCell
 	.globl	neighbours
 	.globl	copyBackAndShow
+    .globl  showBoard
 
 
 ########################################################################
@@ -112,13 +117,25 @@ loop_row_end:
 
 iterations_end:
     addi    $s1, $s1, 1
+    li      $s2, 0
+    
+    la      $a0, msg2
+    li      $v0, 4
+    syscall                     # printf("=== After iteration ")
+
+    move    $a0, $s1
+    li      $v0, 1
+    syscall
+
+    la      $a0, msg5
+    li      $v0, 4
+    syscall                     # printf(" ===\n")
+
+    jal copyBackAndShow
+
     j       iterations
 
 endloop:
-    la      $a0, msg2
-    li      $v0, 4
-    syscall                     # printf("=== After iteration %d ===")
-    # CALL copybackandshow function here
 
     # clean up stack frame
     lw      $s6, -32($fp)       # restore $s6 value
@@ -157,13 +174,13 @@ decideCell:
     j       end_cell 
 
 cell_one:
-    bge		$a2, $t1, check_two	    # if $a2 >= $t1 then check_two
+    bge		$a1, $t1, check_two	    # if $a2 >= $t1 then check_two
     li      $v0, 0
     j		end_cell				# jump to end_cell
 
 check_two:
-    beq		$a2, $t1, check_two_ret 	# if $a2 == $t1 then check_two_ret
-    beq		$a2, $t2, check_two_ret 	# if $a2 == $t2 then check_two_ret
+    beq		$a1, $t1, check_two_ret 	# if $a2 == $t1 then check_two_ret
+    beq		$a1, $t2, check_two_ret 	# if $a2 == $t2 then check_two_ret
     li      $v0, 0
     j		end_cell				# jump to end_cell
 
@@ -196,37 +213,39 @@ neighbours:
     # main code 
     li      $t0, 0                  # use $t0 as nn
     li      $t1, -1                 # use $t1 as x
-    li      $t2, -1                 # use $t2 as y 
     li      $t3, 0                  
     li      $s0, 1
     lw      $s1, N                  # save number of rows and columns 
     addi    $s2, $s1, -1            # save N - 1
+    la      $s3, board
     
 
 row_loop:
     bgt		$t1, $s0, end_loop	    # if $t1 > $s0 then end_loop 
+    li      $t2, -1                 # use $t2 as y
 
 col_loop:
     bgt		$t2, $s0, end_row	    # if $t1 > $s0 then end_row 
-    add     $t4, $a1, $t1
+    add     $t4, $a0, $t1
 
     # if (i + x < 0 || i + x > N - 1)
     bltz    $t4, end_col    
     bgt     $t4, $s2, end_col
 
-    add     $t5, $a2, $t2
+    add     $t5, $a1, $t2
     # if (j + y < 0 || j + y > N - 1)
     bltz    $t5, end_col    
     bgt     $t5, $s2, end_col
 
     # if (x == 0 && y == 0)
-    beqz    $t1, end_col
-    beqz    $t2, end_col
+    bnez    $t1, check_board
+    bnez    $t2, check_board
+    j end_col
 
-    la      $s3, board
+check_board:
     mul     $t6, $t4, $s1           # t6 = row*size of one row
     add     $t6, $t6, $t5           # offset = t6+t5
-    add     $t6, $t6, $s3
+    add     $t6, $t6, $s3           # add offset to the address of the board 
     lb      $t6, ($t6)
 
     bne     $t6, $s0, end_col
@@ -289,6 +308,7 @@ col:
     la      $t5, board
     add     $t5, $t5, $t4
     sb      $t3, ($t5)
+    lb      $t5, ($t5)
 
     # Check if (board[i][j] == 0)
     beqz $t5, print_dot
@@ -314,6 +334,72 @@ row_end:
     j       row
 
 end:
+    # clean up stack frame
+    lw		$s3, -20($fp)		    # restore value for $s3 
+    lw      $s2, -16($fp)           # restore value for $s2 
+    lw      $s1, -12($fp)           # restore value for $s1 
+	lw	    $s0, -8($fp)	        # restore $s0 value
+	lw  	$ra, -4($fp)	        # restore $ra for return
+	la  	$sp, 4($fp)	            # restore $sp (remove stack frame)
+	lw  	$fp, ($fp)	            # restore $fp (remove stack frame)
+	jr  	$ra		                # return
+
+
+
+showBoard:
+ # setup stack frame
+	sw	    $fp, -4($sp)	        # push $fp onto stack
+	la	    $fp, -4($sp)	        # set up $fp for this function
+	sw	    $ra, -4($fp)	        # save return address
+    sw  	$s0, -8($fp)	        # save $s0 
+    sw      $s1, -12($fp)           # save # rows and columns 
+    sw      $s2, -16($fp)           # save N-1
+    sw      $s3, -20($fp)
+	addi	$sp, $sp, -24	        # reset $sp to last pushed item
+
+    # main code 
+    li      $t0, 0                  # load i 
+    lw      $t2, N
+
+row1:
+    bge     $t0, $t2, end1
+    li      $t1, 0                  # load j
+
+col1:
+    bge     $t1, $t2, row_end1
+    
+    mul     $t4, $t0, $t2
+    add     $t4, $t4, $t1           # $t4 = offset 
+
+    # board[i][j]
+    la      $t5, board
+    add     $t5, $t5, $t4
+    lb      $t5, ($t5)
+
+    # Check if (board[i][j] == 0)
+    beqz $t5, print_dot1
+    la      $a0, msg4
+    li      $v0, 4
+    syscall
+    j col_end1
+
+print_dot1:
+    la      $a0, msg3
+    li      $v0, 4
+    syscall
+
+col_end1:
+    addi	$t1, $t1, 1			    # $t1 = $t1 + 1
+    j		col1				        # jump to col
+
+row_end1:
+    la      $a0, eol
+    li      $v0, 4
+    syscall
+    addi	$t0, $t0, 1			    # $t0 = $t0 + 1
+    j       row1
+
+end1:
     # clean up stack frame
     lw		$s3, -20($fp)		    # restore value for $s3 
     lw      $s2, -16($fp)           # restore value for $s2 
