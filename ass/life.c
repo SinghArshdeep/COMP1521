@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+//#include "board2.h"
+
 int neighbours (int i, int j);
 char decideCell (int old, int nn);
 void copyBackAndShow (void);
@@ -70,3 +72,4 @@ void copyBackAndShow (void)
 		putchar ('\n');
 	}
 }
+
