@@ -72,4 +72,3 @@ void copyBackAndShow (void)
 		putchar ('\n');
 	}
 }
-

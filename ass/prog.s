@@ -15,9 +15,6 @@ eol:    .asciiz "\n"
 msg3:   .asciiz "."
 msg4:   .asciiz "#"
 
-msg6:   .asciiz "it enters the loop\n"
-
-
 ## Provides:
 	.globl	main
 	.globl	decideCell
@@ -47,42 +44,44 @@ main:
 
 	# Your main program code goes here.  Good luck!
     # Set up stack frame
-    sw      $fp, -4($sp)    # push $fp onto stack
-    la      $fp, -4($sp)    # set up $fp for this function
-    sw      $ra, -4($fp)    # save return address
-    sw      $s0, -8($fp)    # save $s0 to save iterations
-    sw      $s1, -12($fp)   # save i for the iterations
-    sw      $s2, -16($fp)   # save row
-    sw      $s3, -20($fp)   # save column
-    sw      $s4, -24($fp)   # save # columns and row i.e. N
-    sw      $s5, -28($fp)   # save value nn
-    sw      $s6, -32($fp)   # save pointer for new board
-    addi    $sp, $sp, -36   # reset $sp to last pushed item
+    sw      $fp, -4($sp)        # push $fp onto stack
+    la      $fp, -4($sp)        # set up $fp for this function
+    sw      $ra, -4($fp)        # save return address
+    sw      $s0, -8($fp)        # save $s0 to save iterations
+    sw      $s1, -12($fp)       # save i for the iterations
+    sw      $s2, -16($fp)       # save row
+    sw      $s3, -20($fp)       # save column
+    sw      $s4, -24($fp)       # save # columns and row i.e. N
+    sw      $s5, -28($fp)       # save value nn
+    sw      $s6, -32($fp)       # save pointer for new board
+    addi    $sp, $sp, -36       # reset $sp to last pushed item
 
     # code for main()
     li      $s0, 0
 
     la      $a0, msg1
     li      $v0, 4
-    syscall                 # printf("# Iterations: ")
+    syscall                     # printf("# Iterations: ")
 
     li      $v0, 5
-    syscall                 # scanf("%d", into $v0)
-    move    $s0, $v0        # save iterations into $s0
-    lw      $s4, N          # save # rows and columns
-    li      $s1, 0          # load value into i
-    li      $s2, 0          # row = 0
-    li      $s3, 0          # col = 0
+    syscall                     # scanf("%d", into $v0)
 
+    move    $s0, $v0            # save iterations (maxiters) into $s0
+    lw      $s4, N              # save # rows and columns
+    li      $s1, 0              # load value into i
+    li      $s2, 0              # row = 0
+    li      $s3, 0              # col = 0
+
+# loop untill we reach maxiters 
 iterations:
     bge     $s1, $s0, endloop
 
 loop_row:
-    bge     $s2, $s4, iterations_end
+    bge     $s2, $s4, iterations_end    # if (row >= N) break
     li      $s3, 0
 
 loop_col:
-    bge     $s3, $s4, loop_row_end    # if (col >= N) break
+    bge     $s3, $s4, loop_row_end      # if (col >= N) break
 
     move    $a0, $s2
     move    $a1, $s3
@@ -93,14 +92,14 @@ loop_col:
     mul     $t0, $s2, $s4       # t0 = row*size of one row
     add     $t0, $t0, $s3       # offset = t0+t1
 
-    la      $s6, newBoard       #Store the address of newBoard in $s6
+    la      $s6, newBoard       # store the address of newBoard in $s6
     add     $s6, $t0, $s6       # add the offset to the address and save the address into $s6 to access later
 
-    la      $t1, board          #Store the address of Board in $t1
+    la      $t1, board          # store the address of Board in $t1
     add     $t1, $t0, $t1       # add the offset to the address
     lb      $t1, ($t1)          # load the byte into $t1
 
-#newboard[i][j] = decideCell (board[i][j], nn)
+# newboard[i][j] = decideCell (board[i][j], nn)
     move    $a0, $t1
     move    $a1, $s5
     jal     decideCell          # call the function 
@@ -124,7 +123,7 @@ iterations_end:
     syscall                     # printf("=== After iteration ")
 
     move    $a0, $s1
-    li      $v0, 1
+    li      $v0, 1              # print the number of iteration 
     syscall
 
     la      $a0, msg5
@@ -344,68 +343,3 @@ end:
 	lw  	$fp, ($fp)	            # restore $fp (remove stack frame)
 	jr  	$ra		                # return
 
-
-
-showBoard:
- # setup stack frame
-	sw	    $fp, -4($sp)	        # push $fp onto stack
-	la	    $fp, -4($sp)	        # set up $fp for this function
-	sw	    $ra, -4($fp)	        # save return address
-    sw  	$s0, -8($fp)	        # save $s0 
-    sw      $s1, -12($fp)           # save # rows and columns 
-    sw      $s2, -16($fp)           # save N-1
-    sw      $s3, -20($fp)
-	addi	$sp, $sp, -24	        # reset $sp to last pushed item
-
-    # main code 
-    li      $t0, 0                  # load i 
-    lw      $t2, N
-
-row1:
-    bge     $t0, $t2, end1
-    li      $t1, 0                  # load j
-
-col1:
-    bge     $t1, $t2, row_end1
-    
-    mul     $t4, $t0, $t2
-    add     $t4, $t4, $t1           # $t4 = offset 
-
-    # board[i][j]
-    la      $t5, board
-    add     $t5, $t5, $t4
-    lb      $t5, ($t5)
-
-    # Check if (board[i][j] == 0)
-    beqz $t5, print_dot1
-    la      $a0, msg4
-    li      $v0, 4
-    syscall
-    j col_end1
-
-print_dot1:
-    la      $a0, msg3
-    li      $v0, 4
-    syscall
-
-col_end1:
-    addi	$t1, $t1, 1			    # $t1 = $t1 + 1
-    j		col1				        # jump to col
-
-row_end1:
-    la      $a0, eol
-    li      $v0, 4
-    syscall
-    addi	$t0, $t0, 1			    # $t0 = $t0 + 1
-    j       row1
-
-end1:
-    # clean up stack frame
-    lw		$s3, -20($fp)		    # restore value for $s3 
-    lw      $s2, -16($fp)           # restore value for $s2 
-    lw      $s1, -12($fp)           # restore value for $s1 
-	lw	    $s0, -8($fp)	        # restore $s0 value
-	lw  	$ra, -4($fp)	        # restore $ra for return
-	la  	$sp, 4($fp)	            # restore $sp (remove stack frame)
-	lw  	$fp, ($fp)	            # restore $fp (remove stack frame)
-	jr  	$ra		                # return
