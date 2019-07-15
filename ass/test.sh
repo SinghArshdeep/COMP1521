@@ -56,7 +56,7 @@ gcc ${DIR_C} -o ${DIR_C_RUN}
 ./${DIR_C_RUN} <<< ${SIZE} > ${DIR_C_OUT}
 
 # run mips version
-1521 spim -file ${DIR_MIPS} <<< ${SIZE} > ${DIR_MIPS_OUT}
+spim -file ${DIR_MIPS} <<< ${SIZE} > ${DIR_MIPS_OUT}
 
 # comparing difference and ignore the nonsense line
 # generated on mac
