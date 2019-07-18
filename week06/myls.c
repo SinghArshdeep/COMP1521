@@ -50,6 +50,7 @@ int main (int argc, char *argv[])
 
     // open the directory to start reading
     DIR *df; // UNCOMMENT this line
+    df = opendir(dirname);
     // ... TODO ...
 	// read directory entries
 	struct dirent *entry[100]; // UNCOMMENT this line
