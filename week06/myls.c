@@ -29,9 +29,9 @@ char *groupname (gid_t, char *);
 int main (int argc, char *argv[])
 {
 	// string buffers for various names
-	// char uname[MAXNAME+1]; // UNCOMMENT this line
-	// char gname[MAXNAME+1]; // UNCOMMENT this line
-	// char mode[MAXNAME+1]; // UNCOMMENT this line
+	char uname[MAXNAME+1]; // UNCOMMENT this line
+	char gname[MAXNAME+1]; // UNCOMMENT this line
+	char mode[MAXNAME+1]; // UNCOMMENT this line
 
 	// collect the directory name, with "." as default
 	char dirname[MAXDIRNAME] = ".";
