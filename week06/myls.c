@@ -51,25 +51,46 @@ int main (int argc, char *argv[])
     // open the directory to start reading
     DIR *df; // UNCOMMENT this line
     // ... TODO ...
-    df = opendir(dirname);
-    chdir(dirname);
-    // read directory entries
-    struct dirent *entry; // UNCOMMENT this line
-    // ... TODO ...
-    for(entry = readdir(df);entry != NULL;entry = readdir(df)) {
-        strcpy(dirname, entry->d_name);
-        if(dirname[0] == '.')
-            continue;
-        printType(entry->d_type);
-        lstat (dirname, &info);
-        printf (
-                "%s  %-8.8s %-8.8s %8lld  %s\n",
-                rwxmode (info.st_mode, mode),
-                username (info.st_uid, uname),
-                groupname(info.st_gid, gname),
-                (long long)(info.st_size),
-                dirname
-                );
+	// read directory entries
+	struct dirent *entry[100]; // UNCOMMENT this line
+	
+	int count_entry = 0; 
+    // readthough all the entry in the directory 
+    while((entry[count_entry] = readdir(df))!= NULL){
+        if (entry[count_entry]->d_name[0] == '.'){
+            // filter the first charater is .
+            continue ;
+        }
+        // add one for each recorded file 
+        count_entry ++;        
+    }
+	
+	struct stat sb;
+    
+    for (int i = 0; i< count_entry; i++){
+        // get the file name with directory 
+        char fileLo[512];
+        sprintf(fileLo, "%s/%s", dirname, entry[i]->d_name);
+
+
+        if (lstat(fileLo, &sb) == -1) {
+            // try to get the information of this file
+            perror("stat");
+            exit(EXIT_FAILURE);
+        }
+
+        char fileName[512];
+        // give it the basic value of file name;
+        strcpy(fileName, entry[i]->d_name);
+        
+    
+        printf("%s  %-8.8s %-8.8s %8lld  %s\n",
+			rwxmode(sb.st_mode, mode),
+			username(sb.st_uid, uname),
+			groupname(sb.st_gid, gname),
+			(long long)sb.st_size,
+			fileName); 
+    
     }
     
     // finish up
@@ -82,16 +103,35 @@ int main (int argc, char *argv[])
 char *rwxmode (mode_t mode, char *str)
 {
     // ... TODO ...
-    char rwx[3] = "rwx";
-    int mask = 1 << 8;
-    int j = 0;
-    for(int i = 0; mask >= 1; i++, mask = mask >> 1) {
-        if((mask&mode) == 0)
-            str[j] = '-';
-        else
-            str[j] = rwx[j%3];
-        j++;
+	 //clear the input string 
+    strcpy(str,"");
+    // use the input mode to generate the string represent the file mode.
+    
+    // determine the file type
+    switch (mode& S_IFMT){
+    case S_IFREG:strcat(str,"-");break;
+    case S_IFLNK:strcat(str,"l");break;
+    case S_IFDIR:strcat(str,"d");break;
+    // unknown file type for this iteration
+    default: strcat(str,"?"); break;
     }
+
+    // determine owner premission 
+    strcat(str,((mode&S_IRUSR)?"r":"-"));
+    strcat(str,((mode&S_IWUSR)?"w":"-"));
+    strcat(str,((mode&S_IXUSR)?"x":"-"));
+    
+    // determine group premission 
+    strcat(str,((mode&S_IRGRP)?"r":"-"));
+    strcat(str,((mode&S_IWGRP)?"w":"-"));
+    strcat(str,((mode&S_IXGRP)?"x":"-"));
+    
+    // determine others premission 
+    strcat(str,((mode&S_IROTH)?"r":"-"));
+    strcat(str,((mode&S_IWOTH)?"w":"-"));
+    strcat(str,((mode&S_IXOTH)?"x":"-"));
+    
+    
     return str;
 }
 
