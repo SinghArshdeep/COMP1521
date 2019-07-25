@@ -19,14 +19,14 @@ typedef struct PTE {
 		uint loaded   :1;
 		uint modified :1;
 	} status;
-	int frameNo;      // -1 if page not loaded
+	int frameNo;      // -1 if page not loaded, represents index of slot in phy mem
 	int lastAccessed; // -1 if never accessed
 } PTE;
 
 
 // Global state:
 static PTE *PageTable; // process page table
-static int *MemFrames; // memory (each frame holds page #, or -1 if empty)
+static int *MemFrames; // memory (each frame holds page #, or -1 if empty)/ index of page in page table
 static uint
 	nPages,            // how many process pages
 	nFrames,           // how many memory frames
@@ -68,7 +68,8 @@ int main (int argc, char *argv[])
 
 	initPageTable ();
 	initMemFrames ();
-
+	// remove printf
+	//printf("Pages %d frames %d\n\n", nPages, nFrames);
 	char line[BUFSIZ]; // line buffer
 	while (fgets (line, BUFSIZ, stdin) != NULL) {
 		// get next line; check valid (barely)
@@ -105,45 +106,70 @@ int main (int argc, char *argv[])
 }
 
 
-// map virtual address to physical address
-// handles regular references, page faults and invalid addresses
-int physicalAddress (uint vAddr, char action)
+int physicalAddress(uint vAddr, char action)
 {
-    int physical;
     // extract page# and offset from vAddr
-    uint pageno = vAddr/PAGESIZE;
-    uint offset = vAddr%PAGESIZE; // or with mask/shift
-    // if the page# is not valid, return -1
-    if (! (pageno < nPages))
-        return -1;
-    
-    // if the page is already loaded
-    if(PageTable[pageno].status != NotLoaded) {
-        physical = setPage(PageTable[pageno].frameNo, pageno, offset,action);
-        //printf("state loaded: t: %d\n",clock);
-        return physical;
-    } else {
-        // look for an unused frame ...
-        for (int i = 0; i < nFrames; i++) {
-            if (MemFrames[i] == -1) {
-                physical = setPage(i, pageno, offset,action); // now that we found it, safe to return
-                nLoads++;
-                return physical;
+    int pageNo = vAddr/PAGESIZE;
+    uint offset = vAddr % PAGESIZE;
+    int pAddress = -1;
+
+    if(vAddr >= (nPages*PAGESIZE)) return -1;  // if the page# is not valid, return -1
+    if(PageTable[pageNo].status.loaded)
+    { // if the page is already loaded
+        if(action == 'W') 
+            PageTable[pageNo].status.modified = 1; // set the Modified flag if action is a write
+        PageTable[pageNo].lastAccessed = clock; // update the access time to the current clock tick
+        pAddress = (PageTable[pageNo].frameNo * PAGESIZE) + offset; // use the frame number and offset to compute a physical address
+    } 
+    else 
+    {
+        int i, frame;
+        for(i = 0; i < nFrames; i++)
+        { // look for an unused frame
+            if(MemFrames[i] == -1) 
+                break;
+        }
+        if(MemFrames[i] == -1)
+        { // if find one, use that
+            frame = i;
+        } 
+        else 
+        { // need to replace a currently loaded frame
+            nReplaces++; // increment the nReplaces counter
+            // find the Least Recently Used loaded page
+            int LRU = clock;
+            int pLRU = 0; //Least recently used page
+            for(i = 0; i < nPages; i++)
+            {
+                if((PageTable[i].lastAccessed <= LRU) && (PageTable[i].lastAccessed > -1))
+                {
+                    LRU = PageTable[i].lastAccessed;
+                    pLRU = i;
+                }
             }
+            if(PageTable[pLRU].status.modified == 1) 
+                nSaves++; // increment the nWrites counter if modified
+            frame = PageTable[pLRU].frameNo; // Use the frame of the LRU page
+            // set its PageTable entry to indicate "no longer loaded"
+            PageTable[pLRU].lastAccessed = -1;
+            PageTable[pLRU].frameNo = -1;
+            PageTable[pLRU].status.loaded = 0;
+            PageTable[pLRU].status.modified = 0;
         }
-        // increment the nLoads counter
-        // nReplaces++;
-        nLoads++;
-        // PageTable[pageno].frameNo = theLeastUsedLoadedPage();
-        physical = setPage(PageTable[theLeastUsedLoadedPage()].frameNo, pageno, offset, action);
-        if (PageTable[theLeastUsedLoadedPage()].status == Modified) {
-            nSaves++;
-        }
-        resetLRU(theLeastUsedLoadedPage(),action);
-        
-        return physical;
-        
+        // should now have a frame# to uses
+        nLoads++; // increment the nLoads counter
+        MemFrames[frame] = pageNo; // update MemFrames
+        // set PageTable entry for the new page
+        //  (flags, frame#, accesstime=current clock tick)
+        PageTable[pageNo].status.loaded = 1;
+        if(action == 'W') 
+            PageTable[pageNo].status.modified = 1; // set the Modified flag if action is a write
+        PageTable[pageNo].frameNo = frame;
+        PageTable[pageNo].lastAccessed = clock;
+        pAddress = (PageTable[pageNo].frameNo * PAGESIZE) + offset; // use the frame number and offset to compute a physical address
     }
+
+   return pAddress; // return the physical address
 }
 
 
