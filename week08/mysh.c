@@ -48,7 +48,8 @@ int main (int argc, char *argv[])
 	// main loop: print prompt, read line, execute command
 	char line_[BUFSIZ];
 	printf ("mysh$ ");
-	while (fgets (line_, BUFSIZ, stdin) != NULL) {
+	while (fgets (line_, BUFSIZ, stdin) != NULL)
+    {
 		char *line = trim (line_); // remove leading/trailing space
 		if (strcmp (line, "exit") == 0) break;
 		if (strcmp (line, "") == 0) { printf ("mysh$ "); continue; }
@@ -59,14 +60,29 @@ int main (int argc, char *argv[])
 		/// TODO: implement the `tokenise, fork, execute, cleanup' code
         char **cl = tokenise(line, " ");
         // Parent process starts
-        
-        pid = fork();
-        stat = pid;
-        if (pid != 0) {
-            wait(&stat);
-        } else {
-            execute(cl, path, environ);
+        if (strcmp(argv[0],"cd") == 0)
+        {
+            if (argv[1] == NULL)
+            {
+                // printf("%s\n" arr[1]);
+                char *pathp = getenv("HOME");
+                chdir(pathp);
+            } else
+            {
+                chdir(argv[1]);
+            }
+            
+        }else
+        {
+            pid = fork();
+            stat = pid;
+            if (pid != 0) {
+                wait(&stat);
+            } else {
+                execute(cl, path, environ);
+            }
         }
+        
         freeTokens(cl);
 
 		printf ("mysh$ ");
@@ -85,30 +101,23 @@ static void execute (char **args, char **path, char **envp)
     char *command = NULL;
     char *line = args[0];
     
-    
     // line = "my name is arsh"
     // arr =tokenise(line) | arr[0] = my
     // free(arr)
     
     //char **arr = tokenise (line," ");
     
-    
-    if (line[0] == '/' || line[0] == '.') {
-        if (isExecutable(args[0])) {
+    if (line[0] == '/' || line[0] == '.')
+    {
+        if (isExecutable(args[0]))
+        {
             command = args[0];
         }
-    } else if (strcmp(args[0],"cd") == 0) {
-        if (args[1] == NULL) {
-            // printf("%s\n" arr[1]);
-            char *pathp = getenv("HOME");
-            chdir(pathp);
-        } else {
-            chdir(args[1]);
-        }
         
-        return;
-    } else {
-        for (int i = 0; path[i] != NULL; i++) {
+    }else
+    {
+        for (int i = 0; path[i] != NULL; i++)
+        {
             char *command1 = malloc(strlen(args[0]) + strlen(path[i]) + 1);
             strcpy(command1, path[i]);
             strcat(command1, "/");
@@ -120,17 +129,19 @@ static void execute (char **args, char **path, char **envp)
         }
     }
     
-    if (command == NULL) {
+    if (command == NULL)
+    {
         printf("command not found\n");
         exit(0);
     }
-    else {
+    else
+    {
         printf("%s\n", command);
         int rec = execve(command, args, envp);
+        
         // execution failed
         if(rec == -1) perror("Exec failed");
     }
-    
 }
 
 /// isExecutable: check whether this process can execute a file
