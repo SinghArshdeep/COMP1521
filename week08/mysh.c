@@ -57,6 +57,17 @@ int main (int argc, char *argv[])
 		int stat;	 // return status of child
 
 		/// TODO: implement the `tokenise, fork, execute, cleanup' code
+        char **cl = tokenise(line, " ");
+        // Parent process starts
+        
+        pid = fork();
+        stat = pid;
+        if (pid != 0) {
+            wait(&stat);
+        } else {
+            execute(cl, path, environ);
+        }
+        freeTokens(cl);
 
 		printf ("mysh$ ");
 	}
@@ -70,7 +81,56 @@ int main (int argc, char *argv[])
 // execute: run a program, given command-line args, path and envp
 static void execute (char **args, char **path, char **envp)
 {
-	/// TODO: implement the `find-the-executable and execve(3) it' code
+    /// TODO: implement the `find-the-executable and execve(3) it' code
+    char *command = NULL;
+    char *line = args[0];
+    
+    
+    // line = "my name is arsh"
+    // arr =tokenise(line) | arr[0] = my
+    // free(arr)
+    
+    //char **arr = tokenise (line," ");
+    
+    
+    if (line[0] == '/' || line[0] == '.') {
+        if (isExecutable(args[0])) {
+            command = args[0];
+        }
+    } else if (strcmp(args[0],"cd") == 0) {
+        if (args[1] == NULL) {
+            // printf("%s\n" arr[1]);
+            char *pathp = getenv("HOME");
+            chdir(pathp);
+        } else {
+            chdir(args[1]);
+        }
+        
+        return;
+    } else {
+        for (int i = 0; path[i] != NULL; i++) {
+            char *command1 = malloc(strlen(args[0]) + strlen(path[i]) + 1);
+            strcpy(command1, path[i]);
+            strcat(command1, "/");
+            strcat(command1, args[0]);
+            if (isExecutable(command1)) {
+                command = command1;
+                break;
+            }
+        }
+    }
+    
+    if (command == NULL) {
+        printf("command not found\n");
+        exit(0);
+    }
+    else {
+        printf("%s\n", command);
+        int rec = execve(command, args, envp);
+        // execution failed
+        if(rec == -1) perror("Exec failed");
+    }
+    
 }
 
 /// isExecutable: check whether this process can execute a file
