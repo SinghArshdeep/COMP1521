@@ -60,16 +60,17 @@ int main (int argc, char *argv[])
 		/// TODO: implement the `tokenise, fork, execute, cleanup' code
         char **cl = tokenise(line, " ");
         // Parent process starts
-        if (strcmp(argv[0],"cd") == 0)
+        
+        if (strcmp(*c1[0],"cd") == 0)
         {
-            if (argv[1] == NULL)
+            if (*c1[1] == NULL)
             {
                 // printf("%s\n" arr[1]);
                 char *pathp = getenv("HOME");
                 chdir(pathp);
             } else
             {
-                chdir(argv[1]);
+                chdir(*c1[1]);
             }
             
         }else
