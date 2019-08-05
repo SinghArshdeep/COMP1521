@@ -50,7 +50,7 @@ static struct heap Heap;
 /// Functions:
 
 static addr heapMaxAddr (void);
-
+static int Round(int size);
 
 /** Initialise the Heap. */
 int initHeap (int size)
@@ -58,9 +58,43 @@ int initHeap (int size)
 	Heap.nFree = 0;
 	Heap.freeElems = 0;
 
-	/// TODO ///
+	// Check the size 
+	if (size < MIN_HEAP)
+	{
+		size = MIN_HEAP;
+	}
+	// Checks if size is a multiple of 4 
+	if (size % 4 != 0)
+	{
+		size = Round(size); 
+	}
+	Heap.heapSize =  size;
+	// Allocates a memory of size bytes 
+	header *memory = calloc(size, sizeof(*memory));
+	if (memory == NULL)
+	{
+		fprintf(stderr, "Error in allocating %d bytes", size);
+		return -1;
+	}
+	
+	Heap.heapMem = memory;
+	memory->size = size;
+	memory->status = FREE;
 
-	return 0; // this just keeps the compiler quiet
+	int array_size = size/MIN_CHUNK;
+	void **list = malloc(array_size*sizeof(int));
+	if (list == NULL)
+	{
+		fprintf(stderr, "Error in allocating array with %d bytes", size);
+		return -1;
+	}
+	list[0] = memory;
+	Heap.freeList = list;
+
+	Heap.nFree = 1;
+	Heap.freeElems = array_size;
+	
+	return 0; 
 }
 
 /** Release resources associated with the heap. */
@@ -82,6 +116,23 @@ void *myMalloc (int size)
 void myFree (void *obj)
 {
 	/// TODO ///
+}
+
+// Returns the rounded value for the size 
+static int Round(int size)
+{
+	int rem = size % 4;
+	if (rem == 1)
+	{
+		size += 3;
+	}else if (rem == 2)
+	{
+		size += 2;
+	}else if (rem == 3)
+	{
+		size += 1;
+	}
+	return size; 
 }
 
 /** Return the first address beyond the range of the heap. */
