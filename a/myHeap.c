@@ -73,7 +73,7 @@ int initHeap (int size)
 	Heap.heapSize =  size;
 
 	// Allocates a memory of 'size' bytes 
-	header *memory = calloc(size, sizeof(*memory));
+	header *memory = calloc(size, sizeof(header));
 	if (memory == NULL)
 	{
 		fprintf(stderr, "Error in allocating %d bytes \n", size);
@@ -147,8 +147,8 @@ void *myMalloc (int size)
 void myFree (void *obj)
 {
 	// Point to the start of the header
-	addr temp = (addr)obj - sizeof(header);
-	header *chunk = (header *)temp;
+	addr temp = (addr) obj - sizeof(header);
+	header *chunk = (header *) temp;
 
 	// if the obj is pointing randomly in the memory then exit 
 	if (chunk->status != ALLOC)
@@ -170,7 +170,7 @@ static void splitChunks(header *p, int size, int memorySize)
 	// split the memory into a newChunk
 	addr new = (addr)p;
 	new += size + sizeof(header);
-	header *newChunk = (header *)new;
+	header *newChunk = (header *) new;
 
 	// Update the header for both the chunks 
 	newChunk->status = FREE;
@@ -193,11 +193,11 @@ static void mergeInList()
 	// A forloop to iterate through the list 
 	for (int i = 0; i < (Heap.nFree); i++)
 	{
-		header *chunk = (header *)Heap.freeList[i];
+		header *chunk = (header *) Heap.freeList[i];
 		// Merges all the free adjacent chunks together 
-		while (((addr)chunk + chunk->size) == (addr)Heap.freeList[i+1])
+		while (((addr) chunk + chunk->size) == (addr) Heap.freeList[i+1])
 		{
-			header *next = (header *)Heap.freeList[i+1];
+			header *next = (header *) Heap.freeList[i+1];
 			chunk->size = chunk->size + next->size;
 			deleteInList(Heap.freeList[i+1]);
 		}
@@ -215,7 +215,7 @@ static void deleteInList(header *p)
 		return;
 	}
 	// Deleting the pointer 
-	for (int i = pos ; i < (Heap.nFree - 1); i++)
+	for (int i = pos; i < (Heap.nFree - 1); i++)
 	{
 		Heap.freeList[i] = Heap.freeList[i+1];
 	}
@@ -228,7 +228,7 @@ static int findInList(header *p)
 	// Loop through the list to find the pointer
 	for (int i = 0; i < Heap.nFree; i++)
 	{
-		header *curr = (header *)Heap.freeList[i];
+		header *curr = (header *) Heap.freeList[i];
 		if (curr == p)
 		{
 			return i;
@@ -241,12 +241,12 @@ static int findInList(header *p)
 static void insertInList(void *p)
 {
 	// Cannot insert more elements if array limit reached 
-    if (Heap.nFree >= Heap.freeElems) 
+	if (Heap.nFree >= Heap.freeElems) 
         return; 
 
 	// Loop through the free list and add the pointer 
 	int i;
-   	for (i = (Heap.nFree -1); (i >= 0 && Heap.freeList[i] > p); i--)
+	for (i = (Heap.nFree -1); (i >= 0 && Heap.freeList[i] > p); i--)
 	{
 		Heap.freeList[i+1] = Heap.freeList[i];
 	}
@@ -272,7 +272,7 @@ static header *findSmallestChunk(int size)
 	// Loop through the list to find the smallest chunk of memory
 	for (int i = 0; i < Heap.nFree; i++)
 	{
-		header *curr = ((header *)Heap.freeList[i]);
+		header *curr = ((header *) Heap.freeList[i]);
 		
 		if (curr->size > size)
 		{
@@ -285,9 +285,9 @@ static header *findSmallestChunk(int size)
 			}
 			else
 			{
-			// Update the smallest available chunk 
-			smallest = curr->size;
-			returnChunk = curr;			
+				// Update the smallest available chunk 
+				smallest = curr->size;
+				returnChunk = curr;			
 			}
 		}
 	}
@@ -332,7 +332,7 @@ int heapOffset (void *obj)
 {
 	addr objAddr = (addr) obj;
 	addr heapMin = (addr) Heap.heapMem;
-	addr heapMax =        heapMaxAddr ();
+	addr heapMax = heapMaxAddr ();
 	if (obj == NULL || !(heapMin <= objAddr && objAddr < heapMax))
 		return -1;
 	else
@@ -353,9 +353,9 @@ void dumpHeap (void)
 
 		char stat;
 		switch (chunk->status) {
-		case FREE:  stat = 'F'; break;
-		case ALLOC: stat = 'A'; break;
-		default:
+			case FREE:  stat = 'F'; break;
+			case ALLOC: stat = 'A'; break;
+			default:
 			fprintf (
 				stderr,
 				"myHeap: corrupted heap: chunk status %08x\n",
