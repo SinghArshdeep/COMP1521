@@ -13,7 +13,6 @@
 /** minimum amount of space for a free Chunk (excludes Header) */
 #define MIN_CHUNK 32
 
-
 #define ALLOC 0x55555555
 #define FREE  0xAAAAAAAA
 
@@ -40,15 +39,12 @@ struct heap {
 	uint   nFree;       /**< number of free chunks */
 };
 
-
 /// Variables:
 
 /** The heap proper. */
 static struct heap Heap;
 
-
 /// Functions:
-
 static addr heapMaxAddr (void);
 static int round(int size);
 static header *findSmallestChunk();
@@ -57,9 +53,6 @@ static int findInList(header *p);
 static void insertInList(void *p);
 static void splitChunks(header *p, int size, int memorySize);
 static void mergeInList();
-
-
-
 
 /** Initialise the Heap. */
 int initHeap (int size)
@@ -78,14 +71,14 @@ int initHeap (int size)
 		size = round(size); 
 	}
 	Heap.heapSize =  size;
-	// Allocates a memory of size bytes 
+
+	// Allocates a memory of 'size' bytes 
 	header *memory = calloc(size, sizeof(*memory));
 	if (memory == NULL)
 	{
-		fprintf(stderr, "Error in allocating %d bytes", size);
+		fprintf(stderr, "Error in allocating %d bytes \n", size);
 		return -1;
 	}
-	
 	Heap.heapMem = memory;
 	memory->size = size;
 	memory->status = FREE;
@@ -95,7 +88,7 @@ int initHeap (int size)
 	void **list = malloc(array_size*sizeof(int));
 	if (list == NULL)
 	{
-		fprintf(stderr, "Error in allocating array with %d bytes", size);
+		fprintf(stderr, "Error in allocating array with %d bytes \n", size);
 		return -1;
 	}
 	
@@ -139,50 +132,36 @@ void *myMalloc (int size)
 	{
 		// memory->size = memorySize;
 		deleteInList(memory);
-		// Split the memory into parts if it is bigger than total size and MIN_CHUNK
-	}else
+	}
+	else
 	{
+		// Split the memory into parts if it is bigger than total size and MIN_CHUNK
 		splitChunks(memory, size, memorySize);
 	}
 	// Point to the starting point of writing the data 
 	memory += 1;
-	
 	return memory;
 }
 
 /** Deallocate a chunk of memory. */
 void myFree (void *obj)
 {
-	/// TODO ///
+	// Point to the start of the header
 	addr temp = (addr)obj - sizeof(header);
 	header *chunk = (header *)temp;
-	// if the obj is pointing randomly in the memory
+
+	// if the obj is pointing randomly in the memory then exit 
 	if (chunk->status != ALLOC)
 	{
-		fprintf(stderr, "Error in freeing memory");
+		fprintf(stderr, "Error in freeing memory \n");
 		exit(1);
 	}
+	// Update the chunk 
 	chunk->status = FREE;
 	insertInList(chunk);
 	mergeInList();
-	printf("No elements %d \n", Heap.nFree);
 }
 
-// Merges if chunks are together 
-static void mergeInList()
-{	
-	for (int i = 0; i < (Heap.nFree); i++)
-	{
-		header *chunk = (header *)Heap.freeList[i];
-		
-		while (((addr)chunk + chunk->size) == (addr)Heap.freeList[i+1])
-		{
-			header *next = (header *)Heap.freeList[i+1];
-			chunk->size = chunk->size + next->size;
-			deleteInList(Heap.freeList[i+1]);
-		}
-	}
-}
 //Split the chunks into parts 
 static void splitChunks(header *p, int size, int memorySize)
 {
@@ -192,6 +171,8 @@ static void splitChunks(header *p, int size, int memorySize)
 	addr new = (addr)p;
 	new += size + sizeof(header);
 	header *newChunk = (header *)new;
+
+	// Update the header for both the chunks 
 	newChunk->status = FREE;
 	newChunk->size = p->size - totalSize;
 	p->size = size + sizeof(header);
@@ -200,10 +181,27 @@ static void splitChunks(header *p, int size, int memorySize)
 	int pos = findInList(p);
 	if (pos == -1)
 	{
-		fprintf(stderr, "Error in finding the position of the pointer");
+		fprintf(stderr, "Error in finding the position of the pointer \n");
 		return;
 	}
 	Heap.freeList[pos] = newChunk;
+}
+
+// Merges if free chunks are together in the list 
+static void mergeInList()
+{	 
+	// A forloop to iterate through the list 
+	for (int i = 0; i < (Heap.nFree); i++)
+	{
+		header *chunk = (header *)Heap.freeList[i];
+		// Merges all the free adjacent chunks together 
+		while (((addr)chunk + chunk->size) == (addr)Heap.freeList[i+1])
+		{
+			header *next = (header *)Heap.freeList[i+1];
+			chunk->size = chunk->size + next->size;
+			deleteInList(Heap.freeList[i+1]);
+		}
+	}
 }
 
 // Delete the recieved pointer from the list 
@@ -213,11 +211,11 @@ static void deleteInList(header *p)
 	int pos = findInList(p);
 	if (pos == -1)
 	{
-		fprintf(stderr, "Error in finding the position of the pointer");
+		fprintf(stderr, "Error in finding the position of the pointer \n");
 		return;
 	}
 	// Deleting the pointer 
-	for (int i = pos ; i < Heap.nFree - 1; i++)
+	for (int i = pos ; i < (Heap.nFree - 1); i++)
 	{
 		Heap.freeList[i] = Heap.freeList[i+1];
 	}
@@ -242,6 +240,10 @@ static int findInList(header *p)
 // Insert the recieved pointer into the list 
 static void insertInList(void *p)
 {
+	// Cannot insert more elements if array limit reached 
+    if (Heap.nFree >= Heap.freeElems) 
+        return; 
+
 	// Loop through the free list and add the pointer 
 	int i;
    	for (i = (Heap.nFree -1); (i >= 0 && Heap.freeList[i] > p); i--)
@@ -258,28 +260,30 @@ static void insertInList(void *p)
 static header *findSmallestChunk(int size)
 {
 	// Checks if a free chunk in memory is available
-	if(Heap.nFree == 0)
+	if (Heap.nFree == 0)
 	{
-		fprintf(stderr, "No more free chunks available");
-		return NULL;
+		fprintf(stderr, "No more free chunks available \n");
+		exit(1);
 	}
 
-	// header *chunk = ((header *)Heap.freeList[0]);
 	int smallest, found = 1;
 	void *returnChunk = NULL;
 
 	// Loop through the list to find the smallest chunk of memory
 	for (int i = 0; i < Heap.nFree; i++)
 	{
-		header *curr =((header *)Heap.freeList[i]);
+		header *curr = ((header *)Heap.freeList[i]);
+		
 		if (curr->size > size)
 		{
+			// Save the chunk if it is of sufficient size 
 			if (found)
 			{
 				smallest = curr->size;
 				returnChunk = curr;	
 				found = 0;
-			}else
+			}
+			else
 			{
 			// Update the smallest available chunk 
 			smallest = curr->size;
@@ -288,10 +292,11 @@ static header *findSmallestChunk(int size)
 		}
 	}
 
+	// If no free chunk is available with the required size 
 	if (found)
 	{
-		fprintf(stderr, "Error: required size not available in memory");\
-		return NULL;
+		fprintf(stderr, "Error: required size not available in memory \n");
+		exit(1);
 	}
 	return returnChunk;
 }
@@ -300,13 +305,16 @@ static header *findSmallestChunk(int size)
 static int round(int size)
 {
 	int rem = size % 4;
+
 	if (rem == 1)
 	{
 		size += 3;
-	}else if (rem == 2)
+	}
+	else if (rem == 2)
 	{
 		size += 2;
-	}else if (rem == 3)
+	}
+	else if (rem == 3)
 	{
 		size += 1;
 	}
