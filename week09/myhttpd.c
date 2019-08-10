@@ -17,6 +17,7 @@
 #include <string.h>
 #include <sysexits.h>
 #include <unistd.h>
+#include <time.h>
 
 #define CR   "\r"
 #define LF   "\n"
@@ -29,6 +30,7 @@
 #define H_SERVER       "Server"
 
 #define MIME_PLAIN_UTF8 "text/plain; charset=utf-8"
+#define MIME_HTML_UTF8 "text/html; charset=utf-8"
 #define SERVER_NAME     "cs1521-19t2-lab09/1.0"
 
 /// To make it clear what's a socket and what's not, here's a handy
@@ -97,9 +99,24 @@ int main (void)
 /// `queue_len'.
 static socket_t server_socket_new (in_port_t port, int queue_len)
 {
-	/// TODO ///
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0)
+		perror("ERROR");
+	sockaddr_in name = {
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = {.s_addr = INADDR_ANY}
+	};
 
-	return -1;
+	if ((bind(sockfd, (struct sockaddr*) &name, sizeof(name))) < 0) {
+		perror("ERROR");
+	}
+
+	if (listen(sockfd, queue_len) < 0) {
+		perror("NOT LISTENING\n");
+	} 
+
+	return sockfd;
 }
 
 
@@ -131,15 +148,71 @@ static bool handle_connection (
 	/// not much we can do in that case.
 	request[request_len] = '\0';
 	printf ("<--- Request %d:\n%s\n", (*n_requests)++, request);
+	char *p = request;
+	strsep(&p, " ");
+	char *page = strsep(&p, " ");
+	char name[BUFSIZ];
 
+	for (int i = 0; page[i] != '\0'; i++)
+	{
+		if (page[i] == '?')
+		{
+
+			int cnt = 0;
+			for (int j = i+1; page[j] != '\0'; j++)
+			{
+				name[cnt] = page[j];
+				cnt++;
+			}
+			name[cnt] = '\0';
+			break;
+		}
+	}
 	/// We always send back this response for any request.
 	char response[BUFSIZ] = {
 		"HTTP/1.0 200 OK" CRLF
-		H_CONTENT_TYPE ": " MIME_PLAIN_UTF8 CRLF
+		H_CONTENT_TYPE ": " MIME_HTML_UTF8 CRLF
 		H_SERVER ": " SERVER_NAME CRLF
 		CRLF
-		"Surprise!"
 	};
+	// calculate time
+	time_t rawtime;
+  	struct tm * timeinfo;
+  	time ( &rawtime );
+  	timeinfo = localtime ( &rawtime );
+
+	if (strcmp(page,"/") == 0)
+	{
+		strcat(response, "<h2>myhttpd running!</h2>");
+		strcat(response,"\0");
+	}
+	else if (strcmp(page,"/hello") == 0)
+	{
+		strcat(response, "<h2>Hello!</h2>");
+		strcat(response,"\0");
+	}
+	else if (strcmp(page, "/date") == 0){
+		strcat(response, "<h2>");
+		strcat(response, asctime(timeinfo));
+		strcat(response,"</h2>");
+		strcat(response,"\0");
+	}
+	else if (strcmp(page,"/nonexistent") == 0)
+	{
+		strcat(response, "<h2>404 Page Not Found</h2>");
+		strcat(response,"\0");
+	}
+	else if (strncmp(page, "hello?", 6)){
+		strcat(response, "<h2>Hello, ");
+		strcat(response, name);
+		strcat(response, "!</h2>");
+		strcat(response,"\0");	
+	}else
+    {
+        strcat(response, "<h2>404 Page Not Found</h2>");
+        strcat(response,"\0");
+    }
+
 	size_t response_len = strlen (response);
 
 	printf ("---> Response %d:\n%s\n", (*n_responses)++, response);
