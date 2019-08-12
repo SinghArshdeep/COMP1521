@@ -61,7 +61,7 @@ int main (void)
 
 List insert (List L, int n)
 {
-	Node *new = MEM_ALLOC (sizeof (Node));
+	Node *new = MEM_ALLOC (4*sizeof (Node));
 	if (new == NULL) errx (1, "couldn't allocate Node");
 	new->data = n;
 	Node *prev = NULL;

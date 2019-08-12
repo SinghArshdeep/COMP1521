@@ -48,7 +48,7 @@ static struct heap Heap;
 static addr heapMaxAddr (void);
 static int round(int size);
 static header *findSmallestChunk();
-static void deleteInList(header *p);
+static void deleteInList(int pos);
 static int findInList(header *p);
 static void insertInList(void *p);
 static void splitChunks(header *p, int size, int memorySize);
@@ -130,8 +130,13 @@ void *myMalloc (int size)
 	
 	if (memorySize < (size + sizeof(header) + MIN_CHUNK))
 	{
-		// memory->size = memorySize;
-		deleteInList(memory);
+		int pos = findInList(memory);
+		if (pos == -1)
+		{
+			fprintf(stderr, "Error in finding the position of the pointer \n");
+			return NULL;
+		}
+		deleteInList(pos);
 	}
 	else
 	{
@@ -146,6 +151,12 @@ void *myMalloc (int size)
 /** Deallocate a chunk of memory. */
 void myFree (void *obj)
 {
+	// Check if a valid pointer is given 
+	if (obj == NULL)
+	{
+		fprintf(stderr, "Attempt to free unallocated chunk\n");
+		exit(1);
+	}
 	// Point to the start of the header
 	addr temp = (addr) obj - sizeof(header);
 	header *chunk = (header *) temp;
@@ -199,21 +210,14 @@ static void mergeInList()
 		{
 			header *next = (header *) Heap.freeList[i+1];
 			chunk->size = chunk->size + next->size;
-			deleteInList(Heap.freeList[i+1]);
+			deleteInList(i+1);
 		}
 	}
 }
 
-// Delete the recieved pointer from the list 
-static void deleteInList(header *p)
+// Delete the recieved pointer from the list, if pos not given -1 should be passed instead
+static void deleteInList(int pos)
 {
-	// Find the position of the pointer in the list 
-	int pos = findInList(p);
-	if (pos == -1)
-	{
-		fprintf(stderr, "Error in finding the position of the pointer \n");
-		return;
-	}
 	// Deleting the pointer 
 	for (int i = pos; i < (Heap.nFree - 1); i++)
 	{
@@ -274,7 +278,7 @@ static header *findSmallestChunk(int size)
 	{
 		header *curr = ((header *) Heap.freeList[i]);
 		
-		if (curr->size > size)
+		if (curr->size >= size)
 		{
 			// Save the chunk if it is of sufficient size 
 			if (found)
@@ -283,7 +287,7 @@ static header *findSmallestChunk(int size)
 				returnChunk = curr;	
 				found = 0;
 			}
-			else
+			else if (smallest > curr->size)
 			{
 				// Update the smallest available chunk 
 				smallest = curr->size;
